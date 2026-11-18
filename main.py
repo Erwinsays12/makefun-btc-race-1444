@@ -83,8 +83,6 @@ BOT = MomentumBot()
 
 
 def on_batch(state, batch):
-    if state.warming_up:
-        return []
     bar = None
     for b in batch["bars"]:
         if b["symbol"] == SYMBOL:
@@ -93,7 +91,12 @@ def on_batch(state, batch):
     if bar is None:
         # No CBBTC bar this minute: nothing new to decide on.
         return []
+    # Record the bar even while warming up: warm-up bars are the bars
+    # before the scored window, sent to build history from, and orders
+    # decided on them would only be rejected.
     BOT.note_bar(bar)
+    if state.warming_up:
+        return []
 
     ret60 = BOT.trailing_return_bps(int(bar["t"]), 60)
     if ret60 is None:
